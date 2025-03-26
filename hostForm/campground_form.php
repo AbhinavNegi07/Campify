@@ -117,8 +117,9 @@ $campground = new Campground($db->conn);
                         </div>
 
                         <div class="mb-3">
-                            <label for="image" class="form-label">Upload Image:</label>
-                            <input type="file" name="image" class="form-control" accept="image/*" required>
+                            <label for="images" class="form-label">Upload Images (Max: 6)</label>
+                            <input type="file" name="images[]" id="images" class="form-control" multiple accept="image/*">
+                            <small class="text-muted">You can upload up to 6 images.</small>
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100">Register</button>

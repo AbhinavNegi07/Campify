@@ -14,22 +14,32 @@ if (!isset($_SESSION['user_id'])) {
 $db = new Database();
 $campground = new Campground($db->conn);
 
-// Validate campground ID
-if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-    die("Invalid campground ID.");
+// Validate campground slug
+if (!isset($_GET['slug'])) {
+    die("Invalid campground slug.");
 }
 
-$campground_id = $_GET['id'];
-$campground_details = $campground->getCampgroundById($campground_id);
+$slug = $_GET['slug'];
+$campground_details = $campground->getCampgroundBySlug($slug);
 
 if (!$campground_details) {
     die("Campground not found.");
 }
 
+$campground_id = $campground_details['id']; // Now we have the ID from the database
+$old_slug = $campground_details['slug']; // Store old slug
+$old_folder = "../uploads/" . $old_slug; // Old folder path
+
 // Ensure logged-in user is the owner
 $logged_in_user_id = $_SESSION['user_id'];
 if ($campground_details['user_id'] != $logged_in_user_id) {
     die("You do not have permission to edit this campground.");
+}
+
+// Function to generate a slug
+function generateSlug($string)
+{
+    return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $string), '-'));
 }
 
 // Handle form submission
@@ -40,24 +50,70 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $phone = trim($_POST['phone']);
     $description = trim($_POST['description']);
 
-    // Handle image upload if a new file is provided
-    if (!empty($_FILES['image']['name'])) {
-        $target_dir = "../uploads/";
-        $target_file = $target_dir . basename($_FILES["image"]["name"]);
-        move_uploaded_file($_FILES["image"]["tmp_name"], $target_file);
-        $image_path = $target_file;
-    } else {
-        $image_path = $campground_details['image']; // Keep the existing image
+    // Generate new slug from updated name
+    $new_slug = generateSlug($name);
+    $new_folder = "../uploads/" . $new_slug; // New folder path
+
+    // Rename the uploads folder if the name (slug) is changed
+    if ($new_slug !== $old_slug && is_dir($old_folder)) {
+        rename($old_folder, $new_folder);
     }
 
-    // Update campground
-    $updated = $campground->updateCampground($campground_id, $name, $location, $email, $phone, $description, $image_path, $logged_in_user_id);
+    // Prepare for image uploads
+    $uploaded_images = [];
+    $target_dir = $new_folder . "/";
 
+    // Check if new images were uploaded
+    if (!empty($_FILES['images']['name'][0])) {
+        // Get existing images
+        $existing_images = $campground->getCampgroundImages($campground_id);
 
+        // Delete old images
+        foreach ($existing_images as $image) {
+            $image_path = $old_folder . "/" . basename($image['image_path']);
+            if (file_exists($image_path)) {
+                unlink($image_path);
+            }
+        }
+
+        // Upload new images
+        foreach ($_FILES['images']['tmp_name'] as $key => $tmp_name) {
+            $file_name = basename($_FILES["images"]["name"][$key]);
+            $target_file = $target_dir . $file_name;
+
+            // Create the new folder if it doesn't exist
+            if (!is_dir($new_folder)) {
+                mkdir($new_folder, 0777, true);
+            }
+
+            if (move_uploaded_file($tmp_name, $target_file)) {
+                $uploaded_images[] = $file_name;
+            }
+        }
+    } else {
+        // Keep existing images if no new ones are uploaded
+        $existing_images = $campground->getCampgroundImages($campground_id);
+        foreach ($existing_images as $image) {
+            $uploaded_images[] = basename($image['image_path']);
+        }
+    }
+
+    // Update campground details in the database, including the new slug
+    $updated = $campground->updateCampground(
+        $campground_id,
+        $name,
+        $location,
+        $email,
+        $phone,
+        $description,
+        $uploaded_images, // Updated images array
+        $logged_in_user_id,
+        $new_slug // Pass new slug
+    );
 
     if ($updated) {
         $_SESSION['message'] = "Campground updated successfully!";
-        header("Location: campground_details.php?id=" . $campground_id);
+        header("Location: campground_details.php?slug=" . urlencode($new_slug));
         exit;
     } else {
         $_SESSION['message'] = "Failed to update campground.";
@@ -78,11 +134,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     <div class="container mt-5">
         <h2>Edit Campground</h2>
-
-        <?php if (isset($_SESSION['message'])) : ?>
-            <div class="alert alert-info"><?= $_SESSION['message']; ?></div>
-            <?php unset($_SESSION['message']); ?>
-        <?php endif; ?>
 
         <form action="" method="POST" enctype="multipart/form-data">
             <div class="mb-3">
@@ -111,13 +162,38 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             </div>
 
             <div class="mb-3">
-                <label for="image" class="form-label">Upload New Image (optional)</label>
-                <input type="file" name="image" id="image" class="form-control">
-                <img src="<?= htmlspecialchars($campground_details['image'] ?: '../assets/default.jpg') ?>" alt="Current Image" class="mt-2" style="max-width: 200px;">
+                <label for="images" class="form-label">Upload New Images (optional, max 6)</label>
+                <input type="file" name="images[]" id="images" class="form-control" multiple>
+
+                <div class="mt-2">
+                    <?php
+                    $existing_images = $campground->getCampgroundImages($campground_id);
+
+                    // Ensure slug is correct (use the updated name if changed)
+                    $new_slug = generateSlug($campground_details['name']);
+                    $image_folder = "../uploads/" . htmlspecialchars($new_slug) . "/";
+
+                    if (!empty($existing_images)) {
+                        foreach ($existing_images as $image) {
+                            $image_filename = basename($image['image_path']); // Extract only the filename
+                            $image_path = $image_folder . $image_filename;
+
+                            // Debugging output
+                            if (!file_exists($image_path)) {
+                                echo '<p style="color:red;">Image not found: ' . htmlspecialchars($image_path) . '</p>';
+                            } else {
+                                echo '<img src="' . htmlspecialchars($image_path) . '" alt="Campground Image" class="me-2" style="max-width: 100px; max-height: 100px;">';
+                            }
+                        }
+                    } else {
+                        echo '<img src="../assets/default.jpg" alt="Default Image" class="mt-2" style="max-width: 100px;">';
+                    }
+                    ?>
+                </div>
             </div>
 
             <button type="submit" class="btn btn-success">Update Campground</button>
-            <a href="campground_details.php?id=<?= $campground_id ?>" class="btn btn-secondary">Cancel</a>
+            <a href="campground_details.php?slug=<?= urlencode($old_slug) ?>" class="btn btn-secondary">Cancel</a>
         </form>
     </div>
 

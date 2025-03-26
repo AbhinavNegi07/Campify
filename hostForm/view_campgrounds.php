@@ -4,7 +4,12 @@ require_once '../config/database.php';
 $db = new Database();
 $conn = $db->conn;
 
-$sql = "SELECT * FROM campgrounds ORDER BY created_at DESC";
+// Fetch campgrounds with only the first image
+$sql = "SELECT c.*, 
+               (SELECT image_path FROM campground_images ci WHERE ci.campground_id = c.id ORDER BY ci.id ASC LIMIT 1) AS first_image 
+        FROM campgrounds c 
+        ORDER BY c.created_at DESC";
+
 $result = $conn->query($sql);
 ?>
 
@@ -18,12 +23,10 @@ $result = $conn->query($sql);
     <style>
         .campground-page {
             font-family: Arial, sans-serif;
-            /* margin: 20px; */
             background-color: #f8f9fa;
         }
 
         .campground-container {
-            /* max-width: 1200px; */
             margin: auto;
             text-align: center;
             padding: 20px;
@@ -100,10 +103,36 @@ $result = $conn->query($sql);
         <div class="campground-grid">
             <?php while ($row = $result->fetch_assoc()): ?>
                 <div class="campground-card">
-                    <img src="<?= htmlspecialchars($row['image']); ?>" alt="Campground Image">
+                    <!-- Show first image, or default if no image exists -->
+                    <!-- <img src="<?= htmlspecialchars($row['first_image'] ?: '../assets/default-camp.jpg'); ?>" alt="Campground Image">
+                    <img src="<?= htmlspecialchars('../uploads/' . $row['slug'] . '/' . ($row['first_image'] ?: 'default-camp.jpg')); ?>"
+                        alt="Campground Image"> -->
+                    <?php
+                    $defaultImage = '../assets/default-camp.jpg';
+                    $firstImagePath = $row['first_image'];
+                    $slugImagePath = '../uploads/' . $row['slug'] . '/' . basename($row['first_image']);
+
+                    // Check if the image from the first method exists
+                    if (!empty($firstImagePath) && file_exists($firstImagePath)) {
+                        $imageToShow = $firstImagePath;
+                    }
+                    // Check if the slug-based image exists
+                    elseif (!empty($row['first_image']) && file_exists($slugImagePath)) {
+                        $imageToShow = $slugImagePath;
+                    }
+                    // Fallback to default image
+                    else {
+                        $imageToShow = $defaultImage;
+                    }
+                    ?>
+
+                    <img src="<?= htmlspecialchars($imageToShow); ?>" alt="Campground Image">
+
+
                     <h3><?= htmlspecialchars($row['name']); ?></h3>
                     <p><strong>Location:</strong> <?= htmlspecialchars($row['location']); ?></p>
-                    <a href="campground_details.php?id=<?= $row['id']; ?>" class="campground-btn">View</a>
+
+                    <a href="campground_details.php?slug=<?= urlencode($row['slug']) ?>" class="campground-btn">View Details</a>
                 </div>
             <?php endwhile; ?>
         </div>

@@ -4,12 +4,39 @@ require_once 'config/database.php';
 $db = new Database();
 $conn = $db->conn;
 
-// Fetch campgrounds from the database
-$stmt = $conn->prepare("SELECT id, name, location, image FROM campgrounds");
+// Fetch campgrounds along with their slug and first image
+$stmt = $conn->prepare("
+    SELECT c.id, c.name, c.location, c.slug, 
+           COALESCE(
+               (SELECT ci.image_path FROM campground_images ci WHERE ci.campground_id = c.id ORDER BY ci.id ASC LIMIT 1), 
+               'assets/default-camp.jpg'
+           ) AS first_image
+    FROM campgrounds c
+    ORDER BY c.created_at DESC
+");
+
+// Check if statement preparation was successful
+if (!$stmt) {
+  die("Query preparation failed: " . $conn->error);
+}
+
 $stmt->execute();
 $result = $stmt->get_result();
+
+// Check if the query execution was successful
+if (!$result) {
+  die("Query execution failed: " . $stmt->error);
+}
+
+// Fetch all campgrounds as an associative array
 $campgrounds = $result->fetch_all(MYSQLI_ASSOC);
+
+// Close the statement
+$stmt->close();
 ?>
+
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -20,26 +47,8 @@ $campgrounds = $result->fetch_all(MYSQLI_ASSOC);
     name="viewport"
     content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
   <title>Campify</title>
-  <script
-    src="https://code.jquery.com/jquery-3.7.1.min.js"
-    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
-    crossorigin="anonymous"></script>
   <style>
-    html,
-    body {
-      position: relative;
-      height: 100%;
-    }
-
-    body {
-      background: #eee;
-      font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
-      font-size: 14px;
-      color: #000;
-      margin: 0;
-      padding: 0;
-    }
-
+    /* Swiper Styles */
     swiper-container {
       width: 100%;
       height: 100%;
@@ -60,8 +69,8 @@ $campgrounds = $result->fetch_all(MYSQLI_ASSOC);
       height: 100%;
       object-fit: cover;
     }
-  </style>
-  <style>
+
+    /* Cursor circle */
     .circle {
       --circle-size: 40px;
       position: fixed;
@@ -76,14 +85,15 @@ $campgrounds = $result->fetch_all(MYSQLI_ASSOC);
     }
   </style>
   <link
-    href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
-    rel="stylesheet" />
-  <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
     rel="stylesheet"
     integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
     crossorigin="anonymous" />
   <link rel="stylesheet" href="style.css" />
+  <script
+    src="https://code.jquery.com/jquery-3.7.1.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+    crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -101,6 +111,8 @@ $campgrounds = $result->fetch_all(MYSQLI_ASSOC);
         autoplay
         loop
         muted></video>
+
+      <!-- video-overlay to make video a little dark so that text is visible -->
       <div class="video-overlay"></div>
       <div class="row">
         <div class="col-lg-6">
@@ -297,190 +309,6 @@ $campgrounds = $result->fetch_all(MYSQLI_ASSOC);
     </div>
   </section>
 
-  <!-- <section class="locations" id="campground">
-    <div class="container">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="location-main">Explore Camps</h4>
-        <div class="swiper-navigation d-flex justify-content-end">
-          <button class="custom-prev">
-            <img src="assets/locations/arrow-left-line.svg" alt="" />
-          </button>
-          <button class="custom-next">
-            <img src="assets/locations/arrow-right-line.svg" alt="" />
-          </button>
-        </div>
-      </div>
-      <swiper-container class="mySwiper" init="false">
-        <swiper-slide>
-          <div class="card" style="width: 100%">
-            <div style="height: 60%; overflow: hidden">
-              <img
-                src="assets/locations/location-1.jpg"
-                class="card-img-top"
-                alt="..." />
-            </div>
-            <div class="card-body">
-              <h5 class="card-title">Him Camps</h5>
-              <h6 class="card-subtitle">Manali, H.P</h6>
-              <p class="card-text">Some quick example text to...</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <p>₹1700 / night</p>
-                <a href="#" class="btn">Book Now</a>
-              </div>
-            </div>
-          </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="card" style="width: 100%">
-            <div style="height: 60%; overflow: hidden">
-              <img
-                src="assets/locations/location-2.jpg"
-                class="card-img-top"
-                alt="..." />
-            </div>
-            <div class="card-body">
-              <h5 class="card-title">Him Camps</h5>
-              <h6 class="card-subtitle">Manali, H.P</h6>
-              <p class="card-text">Some quick example text to...</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <p>₹1700 / night</p>
-                <a href="#" class="btn">Book Now</a>
-              </div>
-            </div>
-          </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="card" style="width: 100%">
-            <div style="height: 60%; overflow: hidden">
-              <img
-                src="assets/locations/location-3.jpg"
-                class="card-img-top"
-                alt="..." />
-            </div>
-            <div class="card-body">
-              <h5 class="card-title">Him Camps</h5>
-              <h6 class="card-subtitle">Manali, H.P</h6>
-              <p class="card-text">Some quick example text to...</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <p>₹1700 / night</p>
-                <a href="#" class="btn">Book Now</a>
-              </div>
-            </div>
-          </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="card" style="width: 100%">
-            <div style="height: 60%; overflow: hidden">
-              <img
-                src="assets/locations/location-4.jpg"
-                class="card-img-top"
-                alt="..." />
-            </div>
-            <div class="card-body">
-              <h5 class="card-title">Him Camps</h5>
-              <h6 class="card-subtitle">Manali, H.P</h6>
-              <p class="card-text">Some quick example text to...</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <p>₹1700 / night</p>
-                <a href="#" class="btn">Book Now</a>
-              </div>
-            </div>
-          </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="card" style="width: 100%">
-            <div style="height: 60%; overflow: hidden">
-              <img
-                src="assets/locations/location-5.jpg"
-                class="card-img-top"
-                alt="..." />
-            </div>
-            <div class="card-body">
-              <h5 class="card-title">Him Camps</h5>
-              <h6 class="card-subtitle">Manali, H.P</h6>
-              <p class="card-text">Some quick example text to...</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <p>₹1700 / night</p>
-                <a href="#" class="btn">Book Now</a>
-              </div>
-            </div>
-          </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="card" style="width: 100%">
-            <div style="height: 60%; overflow: hidden">
-              <img
-                src="assets/locations/location-6.jpg"
-                class="card-img-top"
-                alt="..." />
-            </div>
-            <div class="card-body d-flex flex-column justify-content-center">
-              <h5 class="card-title">Him Camps</h5>
-              <h6 class="card-subtitle">Manali, H.P</h6>
-              <p class="card-text">Some quick example text to...</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <p>₹1700 / night</p>
-                <a href="#" class="btn">Book Now</a>
-              </div>
-            </div>
-          </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="card" style="width: 100%">
-            <div style="height: 60%; overflow: hidden">
-              <img
-                src="assets/locations/location-7.jpg"
-                class="card-img-top"
-                alt="..." />
-            </div>
-            <div class="card-body d-flex flex-column justify-content-center">
-              <h5 class="card-title">Him Camps</h5>
-              <h6 class="card-subtitle">Manali, H.P</h6>
-              <p class="card-text">Some quick example text to...</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <p>₹1700 / night</p>
-                <a href="#" class="btn">Book Now</a>
-              </div>
-            </div>
-          </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="card" style="width: 100%">
-            <div style="height: 60%; overflow: hidden">
-              <img
-                src="assets/locations/location-8.jpg"
-                class="card-img-top"
-                alt="..." />
-            </div>
-            <div class="card-body d-flex flex-column justify-content-center">
-              <h5 class="card-title">Him Camps</h5>
-              <h6 class="card-subtitle">Manali, H.P</h6>
-              <p class="card-text">Some quick example text to...</p>
-              <div class="d-flex justify-content-between align-items-center">
-                <p>₹1700 / night</p>
-                <a href="#" class="btn">Book Now</a>
-              </div>
-            </div>
-          </div>
-        </swiper-slide>
-      </swiper-container>
-    </div>
-
-    <div class="mt-4 text-center all-locations">
-      <a
-        class=""
-        href="hostForm/view_campgrounds.php"
-        style="
-            text-decoration: none;
-            font-size: 20px;
-            border: 1px solid #f2681d;
-            color: #f2681d;
-            padding: 10px 20px;
-            transition: all 0.5s ease-in-out;
-          ">View all camps</a>
-    </div>
-  </section> -->
-
   <section class="locations" id="campground">
     <div class="container">
       <div class="d-flex justify-content-between align-items-center mb-4">
@@ -495,33 +323,39 @@ $campgrounds = $result->fetch_all(MYSQLI_ASSOC);
         </div>
       </div>
 
-      <swiper-container class="mySwiper" init="false">
+      <swiper-container class="mySwiper" init="false" autoplay="true">
         <?php foreach ($campgrounds as $camp) : ?>
           <swiper-slide>
             <div class="card" style="width: 100%">
               <div style="height: 60%; overflow: hidden">
+                <!-- image here -->
                 <?php
-                $imagePath = $camp['image'];
+                $baseURL = "http://localhost/MyProjects/campify/";
 
-                // Remove "../" from the path
-                $imagePath = str_replace("../", "", $imagePath);
+                // Ensure $camp contains 'slug'
+                $campSlug = isset($camp['slug']) ? $camp['slug'] : null;
+                $defaultImage = "assets/default-camp.jpg";
 
-                // Check if file exists, else use a default image
-                if (!file_exists($imagePath) || empty($camp['image'])) {
-                  $imagePath = "assets/default-camp.jpg";
+                // If slug and image exist, construct the path
+                if (!empty($campSlug) && !empty($camp['first_image'])) {
+                  $imagePath = "uploads/" . $campSlug . "/" . basename($camp['first_image']);
+                } else {
+                  $imagePath = $defaultImage;
                 }
+
+                // Construct the full image URL
+                $fullImagePath = $baseURL . $imagePath;
                 ?>
 
-                <img src="<?php echo htmlspecialchars($imagePath); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($camp['name']); ?>" />
-
+                <!-- Display the Image -->
+                <img src="<?php echo htmlspecialchars($fullImagePath); ?>" loading="lazy" class="card-img-top" alt="<?php echo htmlspecialchars($camp['name']); ?>" />
               </div>
               <div class="card-body">
                 <h5 class="card-title"><?php echo htmlspecialchars($camp['name']); ?></h5>
                 <h6 class="card-subtitle"><?php echo htmlspecialchars($camp['location']); ?></h6>
                 <p class="card-text">Experience the beauty of nature...</p>
                 <div class="d-flex justify-content-between align-items-center">
-                  <!-- <p>₹<?php echo number_format($camp['price']); ?> / night</p> -->
-                  <a href="hostForm/campground_details.php?id=<?php echo $camp['id']; ?>" class="btn">Book Now</a>
+                  <a href="hostForm/campground_details.php?slug=<?php echo urlencode($camp['slug']); ?>" class="btn">Book Now</a>
                 </div>
               </div>
             </div>

@@ -81,6 +81,7 @@ $username = $isLoggedIn && !empty($_SESSION['username']) ? $_SESSION['username']
     padding: 5px 10px;
     background-color: #f2681d;
     border: 1px solid #f2681d;
+    border-radius: 2px;
     transition: all 1s ease-in-out;
   }
 
@@ -91,6 +92,10 @@ $username = $isLoggedIn && !empty($_SESSION['username']) ? $_SESSION['username']
   .username {
     color: white;
     font-weight: bold;
+  }
+
+  .nav-colored {
+    background-color: grey;
   }
 </style>
 
