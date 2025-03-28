@@ -462,8 +462,8 @@ video {
   overflow: hidden;
 } */
 
-.blog-item {
-  height: 400px;
+/* .blog-item {
+  height: 420px;
   background-position: center;
   background-size: cover;
   margin: 10px 0px;
@@ -498,6 +498,56 @@ video {
 .blog-item-6 {
   background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
     url(assets/blogs/blog-6.jpg);
+} */
+
+.blog-item {
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  height: 400px;
+  border-radius: 10px;
+  overflow: hidden; /* Prevents overflow on hover */
+  transition: transform 0.3s ease, background-size 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 20px;
+  color: white;
+}
+
+/* On hover, scale the background image slightly */
+.blog-item:hover {
+  transform: scale(1.05);
+  background-size: 110%;
+}
+
+/* Smooth text transition on hover */
+.blog-item h4,
+.blog-item p {
+  transition: opacity 0.3s ease;
+}
+
+/* Reduce text visibility slightly when hovered */
+.blog-item:hover h4,
+.blog-item:hover p {
+  opacity: 0.9;
+}
+
+/* Ensure text remains readable */
+.blog-heading a {
+  text-decoration: none;
+  color: white;
+}
+
+.blog-heading a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .blog-item {
+    height: 200px; /* Reduce height on smaller screens */
+  }
 }
 
 .blogs h2 {
@@ -509,11 +559,16 @@ video {
 .blogs a {
   text-decoration: none;
   font-size: 20px;
-  border: 1px solid #f2681d;
+  /* border: 1px solid #f2681d; */
   color: #f2681d;
-  padding: 10px 20px;
+  /* padding: 10px 20px; */
   transition: all 0.5s ease-in-out;
   /* margin-top: 20px; */
+}
+
+.all-blogs {
+  border: 1px solid #f2681d !important;
+  padding: 10px 20px !important;
 }
 
 .blogs a:hover {
@@ -541,6 +596,11 @@ video {
   color: #f2681d;
   padding: 10px 20px;
   transition: all 0.5s ease-in-out;
+}
+
+.all-locations a:hover {
+  background-color: #f2681d;
+  color: #fff;
 }
 
 .custom-prev,

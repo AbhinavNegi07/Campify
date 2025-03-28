@@ -95,7 +95,9 @@ $username = $isLoggedIn && !empty($_SESSION['username']) ? $_SESSION['username']
   }
 
   .nav-colored {
-    background-color: grey;
+    /* background-color: skyblue; */
+    background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+      url(assets/blogs/blog-6.jpg);
   }
 </style>
 
@@ -139,7 +141,7 @@ $username = $isLoggedIn && !empty($_SESSION['username']) ? $_SESSION['username']
         $path2 = "../authentication/logout.php";
         echo file_exists($path1) ? $path1 : $path2;
         ?>
-        ">Logout</a>
+        " style="background-color:red; border:1px solid red">Logout</a>
       <?php else: ?>
         <!-- Show login button when not logged in -->
         <a href="
@@ -148,7 +150,7 @@ $username = $isLoggedIn && !empty($_SESSION['username']) ? $_SESSION['username']
         $path2 = "../authentication/login.php";
         echo file_exists($path1) ? $path1 : $path2;
         ?>
-        ">Login</a>
+        " style="background-color:green; border:1px solid green">Login</a>
       <?php endif; ?>
     </div>
   </nav>

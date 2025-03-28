@@ -15,6 +15,10 @@ $stmt = $conn->prepare("
     ORDER BY c.created_at DESC
 ");
 
+// Fetch latest 6 blogs
+$query = "SELECT * FROM blogs ORDER BY created_at DESC LIMIT 6";
+$blog_result = mysqli_query($conn, $query);
+
 // Check if statement preparation was successful
 if (!$stmt) {
   die("Query preparation failed: " . $conn->error);
@@ -34,8 +38,6 @@ $campgrounds = $result->fetch_all(MYSQLI_ASSOC);
 // Close the statement
 $stmt->close();
 ?>
-
-
 
 
 <!DOCTYPE html>
@@ -373,69 +375,57 @@ $stmt->close();
     <h2 class="text-center mb-4">Latest Blogs</h2>
     <div class="container">
       <div class="row">
-        <div class="col-lg-4">
-          <div class="blog-item align-content-end p-4 blog-item-1">
-            <p class="blog-date">10 March</p>
-            <h4 class="blog-heading">Mountains</h4>
-            <p class="blog-content">
-              Lorem ipsum dolor sit amet consectetur adipisicing elit.
-              Aperiam, dicta.
-            </p>
+        <?php while ($blog = mysqli_fetch_assoc($blog_result)): ?>
+          <div class="col-lg-4">
+            <!-- <a href="pages/blog.php?slug=<?php echo htmlspecialchars($blog['slug']); ?>" class="text-decoration-none">
+              <div class="blog-item align-content-end p-4 shadow-sm text-white"
+                style="background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), 
+                                 url('<?php echo htmlspecialchars($blog['image']); ?>');
+                                background-size: cover;
+                                background-position: center;                            
+                                border-radius: 10px;">
+                <p class="blog-date text-light">
+                  <?php echo date("d F, Y", strtotime($blog['created_at'])); ?>
+                </p>
+                <h4 class="blog-heading">
+                  <a href="blog.php?slug=<?php echo htmlspecialchars($blog['slug']); ?>"
+                    class="text-decoration-none text-white">
+                    <?php echo htmlspecialchars($blog['title']); ?>
+                  </a>
+                </h4>
+                <p class="blog-content">
+                  <?php echo htmlspecialchars(substr($blog['content'], 0, 100)); ?>...
+                </p>
+              </div>
+            </a> -->
+
+            <a href="pages/blog.php?slug=<?php echo htmlspecialchars($blog['slug']); ?>" class="text-decoration-none">
+              <div class="blog-item align-content-end p-4 shadow-sm text-white"
+                style="background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), 
+                             url('<?php echo htmlspecialchars($blog['image']); ?>');
+                            background-size: cover;
+                            background-position: center;
+                            border-radius: 10px;">
+                <p class="blog-date text-light">
+                  <?php echo date("d F, Y", strtotime($blog['created_at'])); ?>
+                </p>
+                <h4 class="blog-heading">
+                  <?php echo htmlspecialchars($blog['title']); ?>
+                </h4>
+                <!-- <p class="blog-content">
+                  <?php echo substr(strip_tags(html_entity_decode($blog['content'], ENT_QUOTES | ENT_HTML5)), 0, 100) . '...'; ?>
+                </p> -->
+
+              </div>
+            </a>
+
           </div>
-        </div>
-        <div class="col-lg-4">
-          <div class="blog-item align-content-end p-4 blog-item-2">
-            <p class="blog-date">10 March</p>
-            <h4 class="blog-heading">Mountains</h4>
-            <p class="blog-content">
-              Lorem ipsum dolor sit amet consectetur adipisicing elit.
-              Aperiam, dicta.
-            </p>
-          </div>
-        </div>
-        <div class="col-lg-4">
-          <div class="blog-item align-content-end p-4 blog-item-3">
-            <p class="blog-date">10 March</p>
-            <h4 class="blog-heading">Mountains</h4>
-            <p class="blog-content">
-              Lorem ipsum dolor sit amet consectetur adipisicing elit.
-              Aperiam, dicta.
-            </p>
-          </div>
-        </div>
-        <div class="col-lg-4">
-          <div class="blog-item align-content-end p-4 blog-item-4">
-            <p class="blog-date">10 March</p>
-            <h4 class="blog-heading">Mountains</h4>
-            <p class="blog-content">
-              Lorem ipsum dolor sit amet consectetur adipisicing elit.
-              Aperiam, dicta.
-            </p>
-          </div>
-        </div>
-        <div class="col-lg-4">
-          <div class="blog-item align-content-end p-4 blog-item-5">
-            <p class="blog-date">10 March</p>
-            <h4 class="blog-heading">Mountains</h4>
-            <p class="blog-content">
-              Lorem ipsum dolor sit amet consectetur adipisicing elit.
-              Aperiam, dicta.
-            </p>
-          </div>
-        </div>
-        <div class="col-lg-4">
-          <div class="blog-item align-content-end p-4 blog-item-6">
-            <p class="blog-date">10 March</p>
-            <h4 class="blog-heading">Mountains</h4>
-            <p class="blog-content">
-              Lorem ipsum dolor sit amet consectetur adipisicing elit.
-              Aperiam, dicta.
-            </p>
-          </div>
-        </div>
+        <?php endwhile; ?>
       </div>
     </div>
-    <div class="mt-4 text-center"><a href="">View all Blogs</a></div>
+    <div class="mt-4 text-center">
+      <a href="pages/blogs.php" class="btn all-blogs">View All Blogs</a>
+    </div>
   </section>
 
   <section class="faqs" id="FAQ">
@@ -444,38 +434,36 @@ $stmt->close();
       <!-- Start of the Accordion -->
       <div class="faq-item">
         <button class="faq-question">
-          What is your return policy?
+          How do I list my campground on Campify?
           <span class="arrow">&#9660;</span>
         </button>
         <div class="faq-answer">
           <p>
-            You can return any item within 30 days of purchase for a full
-            refund.
+            Once registered, log in to your account, go to the "Host a Campground" section, fill in the details, upload images, and submit your listing.
           </p>
         </div>
       </div>
 
       <div class="faq-item">
         <button class="faq-question">
-          Do you offer international shipping?
+          Can I book a campground through Campify?
           <span class="arrow">&#9660;</span>
         </button>
         <div class="faq-answer">
           <p>
-            Yes, we ship to most countries worldwide. Shipping fees apply.
+            Currently, Campify allows users to browse and contact hosts for booking information. Online booking features may be introduced later.
           </p>
         </div>
       </div>
 
       <div class="faq-item">
         <button class="faq-question">
-          How can I track my order?
+          Is my personal information safe on Campify?
           <span class="arrow">&#9660;</span>
         </button>
         <div class="faq-answer">
           <p>
-            Once your order is shipped, we will send you a tracking number via
-            email.
+            Yes, we prioritize user security and do not share your personal details with third parties.
           </p>
         </div>
       </div>
@@ -484,11 +472,9 @@ $stmt->close();
   </section>
 
   <!-- Site footer -->
-
   <?php
   include("components/footer.php");
   ?>
-
 
   <!--BACK TO TOP BUTTON-->
   <div class="m-backtotop" aria-hidden="true">

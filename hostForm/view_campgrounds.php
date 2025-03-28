@@ -21,11 +21,6 @@ $result = $conn->query($sql);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        .campground-page {
-            font-family: Arial, sans-serif;
-            background-color: #f8f9fa;
-        }
-
         .campground-container {
             margin: auto;
             text-align: center;
@@ -44,8 +39,9 @@ $result = $conn->query($sql);
             padding: 15px;
             border-radius: 10px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-            width: 280px;
+            width: 350px;
             transition: transform 0.3s ease-in-out;
+            text-align: left;
         }
 
         .campground-card:hover {
@@ -54,31 +50,32 @@ $result = $conn->query($sql);
 
         .campground-card img {
             width: 100%;
-            height: 180px;
+            height: 240px;
             object-fit: cover;
             border-radius: 5px;
         }
 
         .campground-card h3 {
             margin: 10px 0;
-            font-size: 18px;
+            font-size: 20px;
+            font-weight: 600;
             color: #333;
         }
 
         .campground-card p {
             color: #555;
-            font-size: 14px;
+            font-size: 16px;
             margin-bottom: 10px;
         }
 
         .campground-btn {
             display: inline-block;
             padding: 10px 15px;
-            background-color: #28a745;
+            background-color: #f2681d;
             color: white;
             text-decoration: none;
             border-radius: 5px;
-            font-size: 14px;
+            font-size: 16px;
             transition: background-color 0.3s ease-in-out;
         }
 
@@ -92,11 +89,39 @@ $result = $conn->query($sql);
                 max-width: 300px;
             }
         }
+
+
+        /* Banner */
+        .all-camp-banner {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+                url(../assets/blogs/blog-6.jpg);
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+
+        .all-camp-banner h4 {
+            color: #fff;
+            font-size: 60px;
+            font-weight: 700;
+        }
+
+        .all-camp-banner h4 a {
+            color: #f2681d;
+        }
     </style>
 </head>
 
 <body class="campground-page">
     <?php include("../components/header.php"); ?>
+
+    <div class="all-camp-banner">
+        <h4>All <span>Campgrounds</span></h4>
+    </div>
 
     <div class="campground-container">
         <h2>Registered Campgrounds</h2>
@@ -104,9 +129,6 @@ $result = $conn->query($sql);
             <?php while ($row = $result->fetch_assoc()): ?>
                 <div class="campground-card">
                     <!-- Show first image, or default if no image exists -->
-                    <!-- <img src="<?= htmlspecialchars($row['first_image'] ?: '../assets/default-camp.jpg'); ?>" alt="Campground Image">
-                    <img src="<?= htmlspecialchars('../uploads/' . $row['slug'] . '/' . ($row['first_image'] ?: 'default-camp.jpg')); ?>"
-                        alt="Campground Image"> -->
                     <?php
                     $defaultImage = '../assets/default-camp.jpg';
                     $firstImagePath = $row['first_image'];
