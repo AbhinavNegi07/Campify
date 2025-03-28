@@ -40,7 +40,7 @@ $username = $isLoggedIn && !empty($_SESSION['username']) ? $_SESSION['username']
     justify-content: space-between;
     align-items: center;
     z-index: 99999;
-    background-color: <?php echo $isIndex ? "grey" : "none"; ?>;
+    background-color: <?php echo $isIndex ? "rgba(0, 0, 0, 0.5)" : "none"; ?>;
   }
 
   .logo img {
@@ -96,8 +96,10 @@ $username = $isLoggedIn && !empty($_SESSION['username']) ? $_SESSION['username']
 
   .nav-colored {
     /* background-color: skyblue; */
-    background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
-      url(assets/blogs/blog-6.jpg);
+    /* background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+      url(assets/blogs/blog-6.jpg); */
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 5px 20px !important;
   }
 </style>
 

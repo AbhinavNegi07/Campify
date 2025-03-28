@@ -107,12 +107,18 @@ $stmt->close();
 
   <section class="hero">
     <div class="video-container">
-      <video
+      <!-- <video
         onloadstart="this.playbackRate = 1;"
         src="assets/hero/3210473-uhd_3840_2160_25fps.mp4"
         autoplay
         loop
-        muted></video>
+        muted></video> -->
+      <video
+        class="lazy-video"
+        data-src="assets/hero/hero.mp4"
+        autoplay loop muted
+        poster="assets/hero/hero-2.jpg">
+      </video>
 
       <!-- video-overlay to make video a little dark so that text is visible -->
       <div class="video-overlay"></div>
@@ -485,6 +491,27 @@ $stmt->close();
     <div class="text">Back to top</div>
   </div>
 
+
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      let videos = document.querySelectorAll(".lazy-video");
+
+      let observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            let video = entry.target;
+            video.src = video.dataset.src;
+            observer.unobserve(video);
+          }
+        });
+      });
+
+      videos.forEach(video => {
+        observer.observe(video);
+      });
+    });
+  </script>
   <script src="script.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-element-bundle.min.js"></script>
   <script>
