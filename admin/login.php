@@ -1,6 +1,6 @@
 <?php
 session_start();
-require '../config/database.php';
+require_once '../config/database.php';
 
 $db = new Database();
 $conn = $db->conn; // Access the connection

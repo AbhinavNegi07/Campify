@@ -1,7 +1,7 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-  session_start(); // Start session only if none exists
-}
+// if (session_status() === PHP_SESSION_NONE) {
+//   session_start(); // Start session only if none exists
+// }
 
 // Check if user is logged in
 $isLoggedIn = isset($_SESSION['user_id']);
@@ -40,7 +40,7 @@ $username = $isLoggedIn && !empty($_SESSION['username']) ? $_SESSION['username']
     justify-content: space-between;
     align-items: center;
     z-index: 99999;
-    background-color: <?php echo $isIndex ? "rgba(0, 0, 0, 0.5)" : "none"; ?>;
+    background-color: <?php echo $isIndex ? "rgba(0, 0, 0, 0.2)" : "none"; ?>;
   }
 
   .logo img {
@@ -98,7 +98,7 @@ $username = $isLoggedIn && !empty($_SESSION['username']) ? $_SESSION['username']
     /* background-color: skyblue; */
     /* background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
       url(assets/blogs/blog-6.jpg); */
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.2);
     padding: 5px 20px !important;
   }
 </style>

@@ -88,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $_SESSION['messages'] = ["🎉 Campground registered successfully!"];
-    header("Location: campground_details.php?slug=" . $slug);
+    // header("Location: campground_details.php?slug=" . $slug);
+    header("Location: campground_form.php");
     exit;
 }

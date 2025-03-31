@@ -1,6 +1,6 @@
 <?php
 session_start();
-require '../config/database.php';
+require_once '../config/database.php';
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     die("Invalid request.");

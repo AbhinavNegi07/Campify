@@ -1,5 +1,5 @@
 <?php
-require '../config/database.php';
+require_once '../config/database.php';
 require 'includes/auth.php'; // Ensure only admin can access
 
 $db = new Database();

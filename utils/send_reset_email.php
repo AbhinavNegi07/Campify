@@ -4,7 +4,10 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 require '../vendor/autoload.php'; // Ensure PHPMailer is loaded
-require '../config/database.php'; // Ensure Dotenv is loaded
+require_once '../config/database.php'; // Ensure Dotenv is loaded
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../'); // Adjust path if needed
+$dotenv->load();
 
 function sendResetEmail($email, $token)
 {
@@ -13,19 +16,15 @@ function sendResetEmail($email, $token)
     try {
         // Server settings
         $mail->isSMTP();
-        $mail->Host = getenv('SMTP_HOST'); // Fetch from .env
+        $mail->Host = $_ENV['SMTP_HOST']; // Fetch from .env
         $mail->SMTPAuth = true;
-        $mail->Username = getenv('SMTP_USER');
-        $mail->Password = getenv('SMTP_PASS');
+        $mail->Username = $_ENV['SMTP_USER'];
+        $mail->Password = $_ENV['SMTP_PASS'];
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
 
-        // Debugging (remove after testing)
-        $mail->SMTPDebug = 2;
-        $mail->Debugoutput = 'html';
-
         // Email settings
-        $mail->setFrom(getenv('SMTP_USER'), 'Campify Support');
+        $mail->setFrom("support@mail.com", 'Campify Support');
         $mail->addAddress($email);
         $mail->isHTML(true);
         $mail->Subject = "Password Reset Request";

@@ -9,22 +9,40 @@ class Campground
     }
 
     // Function to register a new campground (Linked to the logged-in user)
+    // public function register($name, $location, $email, $phone, $description, $image, $user_id)
+    // {
+    //     error_log("Register function called");
+    //     echo ("Register Function Called"); // Debugging log
+    //     // Generate a unique slug
+    //     $slug = $this->generateSlug($name);
+    //     $sql = "INSERT INTO campgrounds (name, location, email, phone, description, image, user_id, slug) 
+    //         VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    //     $stmt = $this->conn->prepare($sql);
+    //     $stmt->bind_param("ssssssis", $name, $location, $email, $phone, $description, $image, $user_id, $slug);
+    //     if ($stmt->execute()) {
+    //         return $this->conn->insert_id; // Returns inserted ID
+    //     } else {
+    //         return false;
+    //     }
+    // }
+
     public function register($name, $location, $email, $phone, $description, $image, $user_id)
     {
         error_log("Register function called");
-        echo ("Register Function Called"); // Debugging log
-        // Generate a unique slug
+
         $slug = $this->generateSlug($name);
-        $sql = "INSERT INTO campgrounds (name, location, email, phone, description, image, user_id, slug) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO campgrounds (name, location, email, phone, description, image, user_id, slug, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')"; // Default status is 'pending'
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("ssssssis", $name, $location, $email, $phone, $description, $image, $user_id, $slug);
+
         if ($stmt->execute()) {
-            return $this->conn->insert_id; // Returns inserted ID
+            return $this->conn->insert_id;
         } else {
             return false;
         }
     }
+
 
     // Function to generate a unique slug
     private function generateSlug($name)
@@ -55,25 +73,34 @@ class Campground
     }
 
     // Function to get campground details by Slug 
+    // public function getCampgroundBySlug($slug)
+    // {
+    //     $stmt = $this->conn->prepare("SELECT * FROM campgrounds WHERE slug = ?");
+    //     $stmt->bind_param("s", $slug);
+    //     $stmt->execute();
+    //     $result = $stmt->get_result();
+
+    //     if (!$result) {
+    //         die("SQL Error: " . $this->conn->error); // Debugging
+    //     }
+
+    //     $campground = $result->fetch_assoc();
+
+    //     if (!$campground) {
+    //         die("DEBUG: Campground not found for slug - " . htmlspecialchars($slug));
+    //     }
+
+    //     return $campground;
+    // }
     public function getCampgroundBySlug($slug)
     {
-        $stmt = $this->conn->prepare("SELECT * FROM campgrounds WHERE slug = ?");
+        $stmt = $this->conn->prepare("SELECT * FROM campgrounds WHERE slug = ? AND status = 'approved'");
         $stmt->bind_param("s", $slug);
         $stmt->execute();
         $result = $stmt->get_result();
-
-        if (!$result) {
-            die("SQL Error: " . $this->conn->error); // Debugging
-        }
-
-        $campground = $result->fetch_assoc();
-
-        if (!$campground) {
-            die("DEBUG: Campground not found for slug - " . htmlspecialchars($slug));
-        }
-
-        return $campground;
+        return $result->fetch_assoc();
     }
+
 
 
     // Function to get campground slugs by campground id

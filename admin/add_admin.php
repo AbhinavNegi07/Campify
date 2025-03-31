@@ -1,5 +1,5 @@
 <?php
-require '../config/database.php';  // Include the database class
+require_once '../config/database.php';  // Include the database class
 
 // Create a database instance and get the connection
 $db = new Database();

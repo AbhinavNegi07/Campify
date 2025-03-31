@@ -363,7 +363,7 @@ $stmt->close();
                 <h6 class="card-subtitle"><?php echo htmlspecialchars($camp['location']); ?></h6>
                 <p class="card-text">Experience the beauty of nature...</p>
                 <div class="d-flex justify-content-between align-items-center">
-                  <a href="hostForm/campground_details.php?slug=<?php echo urlencode($camp['slug']); ?>" class="btn">Book Now</a>
+                  <a href="hostForm/campground_details.php?slug=<?php echo urlencode($camp['slug']); ?>" class="btn book-btn">Book Now</a>
                 </div>
               </div>
             </div>

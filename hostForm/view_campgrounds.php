@@ -4,11 +4,13 @@ require_once '../config/database.php';
 $db = new Database();
 $conn = $db->conn;
 
-// Fetch campgrounds with only the first image
-$sql = "SELECT c.*, 
-               (SELECT image_path FROM campground_images ci WHERE ci.campground_id = c.id ORDER BY ci.id ASC LIMIT 1) AS first_image 
-        FROM campgrounds c 
-        ORDER BY c.created_at DESC";
+// Fetch campgrounds with ALL images, not just the first one
+$sql = "SELECT c.*, GROUP_CONCAT(ci.image_path SEPARATOR '|') as all_images
+FROM campgrounds c
+LEFT JOIN campground_images ci ON ci.campground_id = c.id
+WHERE c.status = 'approved'
+GROUP BY c.id
+ORDER BY c.created_at DESC";
 
 $result = $conn->query($sql);
 ?>
@@ -20,6 +22,8 @@ $result = $conn->query($sql);
     <title>Registered Campgrounds</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Add Swiper CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/8.4.5/swiper-bundle.min.css">
     <style>
         .campground-container {
             margin: auto;
@@ -48,10 +52,44 @@ $result = $conn->query($sql);
             transform: translateY(-5px);
         }
 
-        .campground-card img {
+        /* Slider styles */
+        .swiper {
             width: 100%;
             height: 240px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .swiper-slide img {
+            width: 100%;
+            height: 100%;
             object-fit: cover;
+            border-radius: 5px;
+        }
+
+        .swiper-button-next,
+        .swiper-button-prev {
+            color: #f2681d;
+            background: rgba(255, 255, 255, 0.5);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            --swiper-navigation-size: 15px;
+        }
+
+        .swiper-pagination-bullet-active {
+            background-color: #f2681d;
+        }
+
+        .no-images-placeholder {
+            width: 100%;
+            height: 240px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f5f5f5;
+            color: #888;
+            font-style: italic;
             border-radius: 5px;
         }
 
@@ -68,6 +106,37 @@ $result = $conn->query($sql);
             margin-bottom: 10px;
         }
 
+        .campground-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .location {
+            display: flex;
+            align-items: center;
+        }
+
+        .location svg {
+            margin-right: 5px;
+            color: #f2681d;
+        }
+
+        .amenities {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .amenity-tag {
+            font-size: 12px;
+            background-color: #f5f5f5;
+            padding: 4px 8px;
+            border-radius: 20px;
+            color: #555;
+        }
+
         .campground-btn {
             display: inline-block;
             padding: 10px 15px;
@@ -77,6 +146,8 @@ $result = $conn->query($sql);
             border-radius: 5px;
             font-size: 16px;
             transition: background-color 0.3s ease-in-out;
+            width: 100%;
+            text-align: center;
         }
 
         .campground-btn:hover {
@@ -89,7 +160,6 @@ $result = $conn->query($sql);
                 max-width: 300px;
             }
         }
-
 
         /* Banner */
         .all-camp-banner {
@@ -124,35 +194,86 @@ $result = $conn->query($sql);
     </div>
 
     <div class="campground-container">
-        <h2>Registered Campgrounds</h2>
+        <h2>Discover Our Campgrounds</h2>
         <div class="campground-grid">
-            <?php while ($row = $result->fetch_assoc()): ?>
+            <?php while ($row = $result->fetch_assoc()) : ?>
                 <div class="campground-card">
-                    <!-- Show first image, or default if no image exists -->
                     <?php
                     $defaultImage = '../assets/default-camp.jpg';
-                    $firstImagePath = $row['first_image'];
-                    $slugImagePath = '../uploads/' . $row['slug'] . '/' . basename($row['first_image']);
+                    $allImages = [];
 
-                    // Check if the image from the first method exists
-                    if (!empty($firstImagePath) && file_exists($firstImagePath)) {
-                        $imageToShow = $firstImagePath;
-                    }
-                    // Check if the slug-based image exists
-                    elseif (!empty($row['first_image']) && file_exists($slugImagePath)) {
-                        $imageToShow = $slugImagePath;
-                    }
-                    // Fallback to default image
-                    else {
-                        $imageToShow = $defaultImage;
+                    // Process all images
+                    if (!empty($row['all_images'])) {
+                        $imagesPaths = explode('|', $row['all_images']);
+                        foreach ($imagesPaths as $path) {
+                            if (!empty($path) && file_exists($path)) {
+                                $allImages[] = $path;
+                            } else {
+                                // Try with slug path
+                                $slugPath = '../uploads/' . $row['slug'] . '/' . basename($path);
+                                if (!empty($path) && file_exists($slugPath)) {
+                                    $allImages[] = $slugPath;
+                                }
+                            }
+                        }
                     }
                     ?>
 
-                    <img src="<?= htmlspecialchars($imageToShow); ?>" alt="Campground Image">
-
+                    <?php if (count($allImages) > 0) : ?>
+                        <!-- Slider main container -->
+                        <div class="swiper campgroundSwiper-<?= $row['id'] ?>">
+                            <!-- Additional required wrapper -->
+                            <div class="swiper-wrapper">
+                                <?php foreach ($allImages as $image) : ?>
+                                    <div class="swiper-slide">
+                                        <img src="<?= htmlspecialchars($image); ?>" alt="<?= htmlspecialchars($row['name']); ?>">
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <!-- Navigation buttons -->
+                            <div class="swiper-button-next"></div>
+                            <div class="swiper-button-prev"></div>
+                            <!-- Pagination -->
+                            <div class="swiper-pagination"></div>
+                        </div>
+                    <?php else : ?>
+                        <div class="no-images-placeholder">
+                            <img src="<?= htmlspecialchars($defaultImage); ?>" alt="No Images Available">
+                        </div>
+                    <?php endif; ?>
 
                     <h3><?= htmlspecialchars($row['name']); ?></h3>
-                    <p><strong>Location:</strong> <?= htmlspecialchars($row['location']); ?></p>
+
+                    <div class="campground-info">
+                        <div class="location">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" />
+                            </svg>
+                            <?= htmlspecialchars($row['location']); ?>
+                        </div>
+                        <div class="price">
+                            <?php if (!empty($row['price'])) : ?>
+                                <strong>$<?= htmlspecialchars($row['price']); ?></strong>/night
+                            <?php else : ?>
+                                <strong>Contact</strong> for prices
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <!-- <?php if (!empty($row['description'])) : ?>
+                        <p><?= substr(htmlspecialchars($row['description']), 0, 100) . '...'; ?></p>
+                    <?php endif; ?> -->
+
+                    <?php
+                    // Let's simulate some amenities - in real app, these would come from the database
+                    $dummyAmenities = ['Restrooms', 'Showers', 'Campfire', 'Hiking'];
+                    $randomAmenities = array_slice($dummyAmenities, 0, rand(2, 4));
+                    ?>
+                    <div class="amenities">
+                        <?php foreach ($randomAmenities as $amenity) : ?>
+                            <span class="amenity-tag"><?= $amenity ?></span>
+                        <?php endforeach; ?>
+                    </div>
 
                     <a href="campground_details.php?slug=<?= urlencode($row['slug']) ?>" class="campground-btn">View Details</a>
                 </div>
@@ -161,6 +282,35 @@ $result = $conn->query($sql);
     </div>
 
     <?php include("../components/footer.php"); ?>
+
+    <!-- Add Swiper JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/8.4.5/swiper-bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all Swiper sliders
+            <?php
+            // Reset the result pointer to go through all rows again
+            $result->data_seek(0);
+            while ($row = $result->fetch_assoc()) :
+            ?>
+                new Swiper('.campgroundSwiper-<?= $row['id'] ?>', {
+                    loop: true,
+                    pagination: {
+                        el: '.swiper-pagination',
+                        clickable: true,
+                    },
+                    navigation: {
+                        nextEl: '.swiper-button-next',
+                        prevEl: '.swiper-button-prev',
+                    },
+                    autoplay: {
+                        delay: 5000,
+                        disableOnInteraction: false,
+                    },
+                });
+            <?php endwhile; ?>
+        });
+    </script>
 </body>
 
 </html>

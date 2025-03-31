@@ -646,6 +646,13 @@ video {
 .card .btn {
   background-color: #f2681d;
   color: #fff;
+  transition: all 0.5s ease-out;
+}
+
+.book-btn:hover {
+  background-color: #f2681d !important;
+  color: #fff !important;
+  padding: 5px 10px !important;
 }
 
 /* FAQs */

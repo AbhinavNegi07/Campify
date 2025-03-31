@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $db = new Database();
     $conn = $db->conn;
 
-    // Check if the email exists in the database
+    // Check if email exists
     $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
@@ -30,9 +30,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Send Reset Email
         require_once '../utils/send_reset_email.php';
-        sendResetEmail($email, $token);
-
-        $_SESSION['message'] = "A password reset link has been sent to your email!";
+        if (sendResetEmail($email, $token)) {
+            $_SESSION['message'] = "A password reset link has been sent to your email!";
+        } else {
+            $_SESSION['message'] = "Error sending email. Please try again later.";
+        }
     } else {
         $_SESSION['message'] = "No account found with this email.";
     }
@@ -51,10 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body>
     <h2>Forgot Password</h2>
-    <?php if (isset($_SESSION['message'])): ?>
-        <p><?php echo $_SESSION['message'];
+
+    <?php if (isset($_SESSION['message'])) : ?>
+        <p><?php echo htmlspecialchars($_SESSION['message']);
             unset($_SESSION['message']); ?></p>
     <?php endif; ?>
+
     <form method="POST">
         <label>Email Address:</label>
         <input type="email" name="email" required>

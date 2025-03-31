@@ -82,7 +82,7 @@ $campground = new Campground($db->conn);
         <div class="row align-items-stretch">
             <div class="col-lg-6 d-flex">
                 <div class="card img-card shadow p-4 flex-fill">
-                    <img style="width: 100%; height: 100%; object-fit: cover;" src="../assets/hero/hero-1.jpg" alt="">
+                    <!-- <img style="width: 100%; height: 100%; object-fit: cover;" src="../assets/hero/hero-1.jpg" alt=""> -->
                 </div>
             </div>
 
