@@ -1,7 +1,6 @@
 <?php
 require 'includes/auth.php';
 require_once '../config/database.php';
-// require '../includes/mailer.php'; // PHPMailer script
 
 $db = new Database();
 $conn = $db->conn;
@@ -15,43 +14,59 @@ if (!isset($_GET['action']) || !isset($_GET['id'])) {
 $action = $_GET['action'];
 $campground_id = intval($_GET['id']);
 
-// Fetch campground details
-$campgroundQuery = "SELECT * FROM campgrounds WHERE id = ?";
+// Fetch campground details to get slug and images
+$campgroundQuery = "SELECT slug, email, name FROM campgrounds WHERE id = ?";
 $stmt = $conn->prepare($campgroundQuery);
 $stmt->bind_param("i", $campground_id);
 $stmt->execute();
 $campground = $stmt->get_result()->fetch_assoc();
-$email = $campground['email'];
-$name = $campground['name'];
 
-if ($action == 'approve') {
+if (!$campground) {
+    $_SESSION['messages'] = ["⚠️ Campground not found!"];
+    header("Location: manage_campgrounds.php");
+    exit;
+}
+
+$slug = $campground['slug'];
+$folderPath = "../uploads/" . $slug;
+
+if ($action === 'approve') {
     $sql = "UPDATE campgrounds SET status = 'approved' WHERE id = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $campground_id);
     $stmt->execute();
 
-    // sendEmail($email, "Campground Approved", "Your campground '$name' has been approved and is now live on our platform.");
     $_SESSION['messages'] = ["✅ Campground approved successfully!"];
-} elseif ($action == 'reject') {
-    $sql = "DELETE FROM campgrounds WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $campground_id);
-    $stmt->execute();
+} elseif ($action === 'reject' || $action === 'delete') {
+    // Delete images from storage
+    $imageQuery = $conn->prepare("SELECT image_path FROM campground_images WHERE campground_id = ?");
+    $imageQuery->bind_param("i", $campground_id);
+    $imageQuery->execute();
+    $imageResult = $imageQuery->get_result();
 
-    // sendEmail($email, "Campground Rejected", "Your campground '$name' has been rejected. Please contact support for details.");
-    $_SESSION['messages'] = ["❌ Campground rejected and deleted!"];
-} elseif ($action == 'delete') {
-    $deleteImagesQuery = "DELETE FROM campground_images WHERE campground_id = ?";
-    $stmtImages = $conn->prepare($deleteImagesQuery);
-    $stmtImages->bind_param("i", $campground_id);
-    $stmtImages->execute();
+    while ($imageRow = $imageResult->fetch_assoc()) {
+        $imagePath = $folderPath . "/" . basename($imageRow['image_path']);
+        if (file_exists($imagePath)) {
+            unlink($imagePath); // Delete image file
+        }
+    }
 
-    $deleteQuery = "DELETE FROM campgrounds WHERE id = ?";
-    $stmtDelete = $conn->prepare($deleteQuery);
-    $stmtDelete->bind_param("i", $campground_id);
-    $stmtDelete->execute();
+    // Remove images from the database
+    $deleteImagesQuery = $conn->prepare("DELETE FROM campground_images WHERE campground_id = ?");
+    $deleteImagesQuery->bind_param("i", $campground_id);
+    $deleteImagesQuery->execute();
 
-    $_SESSION['messages'] = ["🗑️ Campground deleted successfully!"];
+    // Delete the campground record
+    $deleteQuery = $conn->prepare("DELETE FROM campgrounds WHERE id = ?");
+    $deleteQuery->bind_param("i", $campground_id);
+    $deleteQuery->execute();
+
+    // Delete folder if it's empty
+    if (is_dir($folderPath)) {
+        rmdir($folderPath);
+    }
+
+    $_SESSION['messages'] = ["❌ Campground " . ($action === 'reject' ? "rejected" : "deleted") . " and images removed!"];
 } else {
     $_SESSION['messages'] = ["⚠️ Invalid action!"];
 }

@@ -1,7 +1,7 @@
 <?php
-// if (session_status() === PHP_SESSION_NONE) {
-//   session_start(); // Start session only if none exists
-// }
+if (session_status() === PHP_SESSION_NONE) {
+  session_start(); // Start session only if none exists
+}
 
 // Check if user is logged in
 $isLoggedIn = isset($_SESSION['user_id']);
@@ -129,10 +129,19 @@ $username = $isLoggedIn && !empty($_SESSION['username']) ? $_SESSION['username']
 
     <div class="nav-buttons">
       <!-- "Become a Host" should always be visible -->
-      <!-- <a href="hostForm/campground_form.php">Become a Host</a> -->
-      <a href="<?php echo $isLoggedIn ? 'hostForm/campground_form.php' : 'authentication/login.php'; ?>">
-        Become a Host
-      </a>
+      <?php
+      // Define possible paths
+      $path1 = 'hostForm/campground_form.php';
+      $path2 = 'campground_form.php'; // Second option
+      // Determine which path to use
+      if ($isLoggedIn) {
+        $destination = file_exists($path1) ? $path1 : (file_exists($path2) ? $path2 : 'hostForm/campground_form.php');
+      } else {
+        $destination = 'authentication/login.php';
+      }
+      ?>
+
+      <a href="<?php echo $destination; ?>">Become a Host</a>
 
       <?php if ($isLoggedIn): ?>
         <!-- Show username and logout button when logged in -->

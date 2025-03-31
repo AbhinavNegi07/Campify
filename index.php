@@ -4,40 +4,58 @@ require_once 'config/database.php';
 $db = new Database();
 $conn = $db->conn;
 
-// Fetch campgrounds along with their slug and first image
+// Fetch all campgrounds with their slug and first image
 $stmt = $conn->prepare("
-    SELECT c.id, c.name, c.location, c.slug, 
+    SELECT c.id, c.name, c.location, c.slug, c.price,
            COALESCE(
-               (SELECT ci.image_path FROM campground_images ci WHERE ci.campground_id = c.id ORDER BY ci.id ASC LIMIT 1), 
+               (SELECT ci.image_path FROM campground_images ci 
+                WHERE ci.campground_id = c.id ORDER BY ci.id ASC LIMIT 1), 
                'assets/default-camp.jpg'
            ) AS first_image
     FROM campgrounds c
+    WHERE c.status = 'approved'  -- ✅ Only fetch approved campgrounds
     ORDER BY c.created_at DESC
 ");
 
-// Fetch latest 6 blogs
-$query = "SELECT * FROM blogs ORDER BY created_at DESC LIMIT 6";
-$blog_result = mysqli_query($conn, $query);
-
-// Check if statement preparation was successful
 if (!$stmt) {
   die("Query preparation failed: " . $conn->error);
 }
 
 $stmt->execute();
-$result = $stmt->get_result();
+$campgrounds_result = $stmt->get_result();
 
-// Check if the query execution was successful
-if (!$result) {
+if (!$campgrounds_result) {
   die("Query execution failed: " . $stmt->error);
 }
 
-// Fetch all campgrounds as an associative array
-$campgrounds = $result->fetch_all(MYSQLI_ASSOC);
+$campgrounds = $campgrounds_result->fetch_all(MYSQLI_ASSOC);
+
+// Fetch latest 6 blogs
+$query = "SELECT * FROM blogs ORDER BY created_at DESC LIMIT 6";
+$blog_result = $conn->query($query);
+
+// Fetch 10 random approved campgrounds
+$random_sql = "
+    SELECT c.id, c.name, c.location, c.description,c.slug,
+           (SELECT image_path FROM campground_images ci WHERE ci.campground_id = c.id ORDER BY RAND() LIMIT 1) AS image
+    FROM campgrounds c 
+    WHERE c.status = 'approved' 
+    ORDER BY RAND() 
+    LIMIT 10
+";
+
+$random_campgrounds_result = $conn->query($random_sql);
+
+if (!$random_campgrounds_result) {
+  die("Query execution failed: " . $conn->error);
+}
+
+$random_campgrounds = $random_campgrounds_result->fetch_all(MYSQLI_ASSOC);
 
 // Close the statement
 $stmt->close();
 ?>
+
 
 
 <!DOCTYPE html>
@@ -145,177 +163,62 @@ $stmt->close();
     </div>
   </section>
 
+
+
   <section class="campgrounds">
     <h2>Top Campgrounds</h2>
     <div class="carousel container">
       <div class="list">
-        <div
-          class="item"
-          style="
-              background-image: url(assets/campgrounds/free-photo-of-barren-mountain-peaks.jpeg);
-            ">
-          <div class="content">
-            <div class="title">SUNRISE ON PEAKS</div>
-            <div class="name">Sunrise</div>
-            <div class="des">
-              Witness the serene beauty of the sunrise over majestic mountain
-              peaks. A moment of pure tranquility.
-            </div>
-          </div>
-        </div>
+        <?php if (!empty($random_campgrounds)) : ?>
+          <?php foreach ($random_campgrounds as $camp) : ?>
+            <!-- <?php
+                  $imagePath = !empty($camp['image']) ? str_replace('../', '', $camp['image']) : 'assets/default.jpg';
+                  ?>
+            <div class="item" style="background-image: url('<?= htmlspecialchars($imagePath) ?>');"> -->
+            <?php
+            // Check if the image path is stored as a full path or just the image name
+            if (!empty($camp['image'])) {
+              // If the image path contains '../uploads/', assume it's a full path
+              if (strpos($camp['image'], '../uploads/') !== false) {
+                $imagePath = str_replace('../', '', $camp['image']);
+              } else {
+                // Otherwise, assume it's just the image name and prepend the correct path
+                $imagePath = "uploads/" . $camp['slug'] . "/" . $camp['image'];
+              }
+            } else {
+              $imagePath = "assets/default.jpg"; // Default image
+            }
+            ?>
 
-        <div
-          class="item"
-          style="
-              background-image: url(assets/campgrounds/free-photo-of-barren-mountains-peaks-under-clouds.jpeg);
-            ">
-          <div class="content">
-            <div class="title">RUGGED ROCKS</div>
-            <div class="name">Rocky</div>
-            <div class="des">
-              Explore the rugged beauty of barren rocky mountains. A testament
-              to nature's raw power.
-            </div>
-          </div>
-        </div>
+            <div class="item" style="background-image: url('<?= htmlspecialchars($imagePath) ?>');">
 
-        <div
-          class="item"
-          style="
-              background-image: url(assets/campgrounds/free-photo-of-barren-rocky-mountains.jpeg);
-            ">
-          <div class="content">
-            <div class="title">FOREST PATHWAY</div>
-            <div class="name">Forest</div>
-            <div class="des">
-              A peaceful trail through dense green forests. Perfect for
-              reconnecting with nature.
+              <div class="content">
+                <div class="title"><?= htmlspecialchars(strtoupper($camp['name'])) ?></div>
+                <div class="name"><?= htmlspecialchars($camp['location']) ?></div>
+              </div>
             </div>
-          </div>
-        </div>
-
-        <div
-          class="item"
-          style="
-              background-image: url(assets/campgrounds/free-photo-of-mountain-peaks-over-clouds.jpeg);
-            ">
-          <div class="content">
-            <div class="title">COLORFUL MEADOW</div>
-            <div class="name">Meadow</div>
-            <div class="des">
-              A colorful meadow filled with butterflies and blooming flowers.
-              Nature at its best.
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="item"
-          style="
-              background-image: url(assets/campgrounds/pexels-photo-2073873.jpeg);
-            ">
-          <div class="content">
-            <div class="title">SERENE LAKE</div>
-            <div class="name">Lake</div>
-            <div class="des">
-              A calm and serene lake surrounded by towering trees and
-              mountains. A perfect escape.
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="item"
-          style="
-              background-image: url(assets/campgrounds/pexels-photo-2832061.jpeg);
-            ">
-          <div class="content">
-            <div class="title">PEAKS IN THE CLOUDS</div>
-            <div class="name">Clouds</div>
-            <div class="des">
-              Mountain peaks wrapped in clouds. A dreamy sight that inspires
-              awe and wonder.
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="item"
-          style="
-              background-image: url(assets/campgrounds/pexels-photo-552784.jpeg);
-            ">
-          <div class="content">
-            <div class="title">RIVERBANK PARADISE</div>
-            <div class="name">Riverbank</div>
-            <div class="des">
-              A picturesque riverbank flowing through lush greenery and
-              vibrant landscapes.
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="item"
-          style="
-              background-image: url(assets/campgrounds/pexels-photo-552785.jpeg);
-            ">
-          <div class="content">
-            <div class="title">MYSTIC RIDGES</div>
-            <div class="name">Ridges</div>
-            <div class="des">
-              Discover the mystic beauty of mountain ridges under a cloudy
-              sky. Perfect for adventurers.
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="item"
-          style="
-              background-image: url(assets/campgrounds/pexels-photo-6439041.jpeg);
-            ">
-          <div class="content">
-            <div class="title">GOLDEN CLIFFS</div>
-            <div class="name">Cliffs</div>
-            <div class="des">
-              Golden cliffs basking in sunlight. A stunning view that captures
-              the heart of nature.
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="item"
-          style="
-              background-image: url(assets/campgrounds/pexels-photo-7616134.jpeg);
-            ">
-          <div class="content">
-            <div class="title">PEACEFUL VALLEY</div>
-            <div class="name">Valley</div>
-            <div class="des">
-              A peaceful valley surrounded by towering mountains. A perfect
-              destination for solitude.
-            </div>
-          </div>
-        </div>
+          <?php endforeach; ?>
+        <?php else : ?>
+          <!-- Hide the entire section if no campgrounds exist -->
+          <p class="text-center text-muted">No campgrounds available at the moment.</p>
+        <?php endif; ?>
       </div>
 
-      <!--next prev button-->
-      <div class="arrows">
-        <button class="prev">
-          <
-            </button>
-            <button class="next">
-              >
-            </button>
+      <?php if (count($random_campgrounds) > 1) : ?>
+        <!-- Show navigation buttons only if there are multiple camps -->
+        <div class="arrows">
+          <button class="prev">&lt;</button>
+          <button class="next">&gt;</button>
+        </div>
+      <?php endif; ?>
 
-            <div class="slide-number"></div>
-      </div>
-
-      <!-- time running -->
-      <!-- <div class="timeRunning"></div> -->
+      <div class="slide-number"></div>
     </div>
   </section>
+
+
+
+
 
   <section class="locations" id="campground">
     <div class="container">
@@ -362,6 +265,8 @@ $stmt->close();
                 <h5 class="card-title"><?php echo htmlspecialchars($camp['name']); ?></h5>
                 <h6 class="card-subtitle"><?php echo htmlspecialchars($camp['location']); ?></h6>
                 <p class="card-text">Experience the beauty of nature...</p>
+                <p><strong>Price per Night:</strong> ₹<?= number_format($camp['price'], 2) ?></p>
+
                 <div class="d-flex justify-content-between align-items-center">
                   <a href="hostForm/campground_details.php?slug=<?php echo urlencode($camp['slug']); ?>" class="btn book-btn">Book Now</a>
                 </div>

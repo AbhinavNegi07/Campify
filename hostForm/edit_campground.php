@@ -49,26 +49,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = trim($_POST['email']);
     $phone = trim($_POST['phone']);
     $description = trim($_POST['description']);
+    $price = floatval($_POST['price']); // ✅ Convert price to float
 
-    // Generate new slug from updated name
-    $new_slug = generateSlug($name);
-    $new_folder = "../uploads/" . $new_slug; // New folder path
+    // Generate new slug only if name changes
+    $new_slug = ($name !== $campground_details['name']) ? generateSlug($name) : $old_slug;
+    $new_folder = "../uploads/" . $new_slug;
 
-    // Rename the uploads folder if the name (slug) is changed
+    // ✅ Only rename if the folder exists
     if ($new_slug !== $old_slug && is_dir($old_folder)) {
         rename($old_folder, $new_folder);
     }
 
-    // Prepare for image uploads
+    // ✅ Handle image upload properly
     $uploaded_images = [];
-    $target_dir = $new_folder . "/";
-
-    // Check if new images were uploaded
     if (!empty($_FILES['images']['name'][0])) {
-        // Get existing images
         $existing_images = $campground->getCampgroundImages($campground_id);
 
-        // Delete old images
+        // ✅ Delete old images only if new ones are uploaded
         foreach ($existing_images as $image) {
             $image_path = $old_folder . "/" . basename($image['image_path']);
             if (file_exists($image_path)) {
@@ -76,12 +73,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
         }
 
-        // Upload new images
+        // ✅ Upload new images
         foreach ($_FILES['images']['tmp_name'] as $key => $tmp_name) {
             $file_name = basename($_FILES["images"]["name"][$key]);
-            $target_file = $target_dir . $file_name;
+            $target_file = $new_folder . "/" . $file_name;
 
-            // Create the new folder if it doesn't exist
             if (!is_dir($new_folder)) {
                 mkdir($new_folder, 0777, true);
             }
@@ -91,14 +87,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
         }
     } else {
-        // Keep existing images if no new ones are uploaded
+        // ✅ Keep existing images if no new ones are uploaded
         $existing_images = $campground->getCampgroundImages($campground_id);
         foreach ($existing_images as $image) {
             $uploaded_images[] = basename($image['image_path']);
         }
     }
 
-    // Update campground details in the database, including the new slug
+    // ✅ Update campground details
     $updated = $campground->updateCampground(
         $campground_id,
         $name,
@@ -106,9 +102,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $email,
         $phone,
         $description,
-        $uploaded_images, // Updated images array
+        $price, // ✅ Include price update
+        $uploaded_images,
         $logged_in_user_id,
-        $new_slug // Pass new slug
+        $new_slug
     );
 
     if ($updated) {
@@ -160,6 +157,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <label for="description" class="form-label">Description</label>
                 <textarea name="description" id="description" class="form-control" rows="5" required><?= htmlspecialchars($campground_details['description']) ?></textarea>
             </div>
+
+            <div class="mb-3">
+                <label for="price" class="form-label">Price (INR)</label>
+                <input type="number" name="price" id="price" class="form-control" min="0" step="1"
+                    value="<?= htmlspecialchars($campground_details['price']) ?>" required>
+            </div>
+
 
             <div class="mb-3">
                 <label for="images" class="form-label">Upload New Images (optional, max 6)</label>

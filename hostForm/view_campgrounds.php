@@ -1,6 +1,10 @@
 <?php
 require_once '../config/database.php';
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 $db = new Database();
 $conn = $db->conn;
 
@@ -13,6 +17,27 @@ GROUP BY c.id
 ORDER BY c.created_at DESC";
 
 $result = $conn->query($sql);
+
+
+$query = "SELECT * FROM campgrounds WHERE status = 'approved'";
+
+$search_location = isset($_GET['search_location']) ? trim($_GET['search_location']) : '';
+
+if (!empty($search_location)) {
+    $query .= " AND location LIKE ?";
+}
+
+$stmt = $conn->prepare($query);
+
+if (!empty($search_location)) {
+    $search_param = "%$search_location%";
+    $stmt->bind_param("s", $search_param);
+}
+
+$stmt->execute();
+$filter_result = $stmt->get_result();
+
+
 ?>
 
 <!DOCTYPE html>
@@ -188,12 +213,19 @@ $result = $conn->query($sql);
 
 <body class="campground-page">
     <?php include("../components/header.php"); ?>
+    <!-- <form method="GET" action="">
+        <input type="text" name="search_location" placeholder="Search by location" value="<?= isset($_GET['search_location']) ? htmlspecialchars($_GET['search_location']) : '' ?>">
+        <button type="submit">Search</button>
+    </form> -->
+
 
     <div class="all-camp-banner">
         <h4>All <span>Campgrounds</span></h4>
     </div>
-
-    <div class="campground-container">
+    <?php
+    $hide_section = ($filter_result->num_rows > 0) ? "display: none;" : "";
+    ?>
+    <div class="campground-container" style="<?= $hide_section; ?>">
         <h2>Discover Our Campgrounds</h2>
         <div class="campground-grid">
             <?php while ($row = $result->fetch_assoc()) : ?>
@@ -253,15 +285,17 @@ $result = $conn->query($sql);
                         </div>
                         <div class="price">
                             <?php if (!empty($row['price'])) : ?>
-                                <strong>$<?= htmlspecialchars($row['price']); ?></strong>/night
+                                <strong>₹<?= number_format($row['price'], 2); ?></strong>/night
                             <?php else : ?>
                                 <strong>Contact</strong> for prices
                             <?php endif; ?>
                         </div>
+                        <!-- <p><strong>Price per Night:</strong> ₹<?= number_format($row['price'], 2) ?></p> -->
+
                     </div>
 
                     <!-- <?php if (!empty($row['description'])) : ?>
-                        <p><?= substr(htmlspecialchars($row['description']), 0, 100) . '...'; ?></p>
+                        <p><?= substr(htmlspecialchars($row['description']), 0, 50) . '...'; ?></p>
                     <?php endif; ?> -->
 
                     <?php
@@ -280,37 +314,63 @@ $result = $conn->query($sql);
             <?php endwhile; ?>
         </div>
     </div>
+    <?php
+    $hided_section = ($filter_result->num_rows > 0) ? "" : "display: none;";
+    ?>
+    <div style="<?= $hided_section; ?>>
+        <?php
+        if ($filter_result->num_rows > 0) {
+            echo '<div class="campground-container">';
+            while ($campground = $filter_result->fetch_assoc()) {
+                $imagePath = !empty($campground['image']) ? "uploads/" . $campground['slug'] . "/" . htmlspecialchars($campground['image']) : "assets/default.jpg";
+
+                echo '<div class="campground-card">';
+                echo '<img src="' . $imagePath . '" alt="Campground Image">';
+                echo '<div class="campground-details">';
+                echo '<h3>' . htmlspecialchars($campground['name']) . '</h3>';
+                echo '<p><strong>Location:</strong> ' . htmlspecialchars($campground['location']) . '</p>';
+                echo '<p>' . htmlspecialchars(substr($campground['description'], 0, 100)) . '...</p>';
+                echo '<a href="campground_details.php?slug=' . urlencode($campground['slug']) . '" class="view-btn">View Details</a>';
+                echo '</div></div>';
+            }
+            echo '</div>';
+        } else {
+            echo "<p class='no-results'>No campgrounds found for this location.</p>";
+        }
+        ?>
+    </div>
 
     <?php include("../components/footer.php"); ?>
 
     <!-- Add Swiper JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/8.4.5/swiper-bundle.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize all Swiper sliders
-            <?php
-            // Reset the result pointer to go through all rows again
-            $result->data_seek(0);
-            while ($row = $result->fetch_assoc()) :
-            ?>
-                new Swiper('.campgroundSwiper-<?= $row['id'] ?>', {
-                    loop: true,
-                    pagination: {
-                        el: '.swiper-pagination',
-                        clickable: true,
-                    },
-                    navigation: {
-                        nextEl: '.swiper-button-next',
-                        prevEl: '.swiper-button-prev',
-                    },
-                    autoplay: {
-                        delay: 5000,
-                        disableOnInteraction: false,
-                    },
-                });
-            <?php endwhile; ?>
-        });
-    </script>
+    <script src=" https://cdnjs.cloudflare.com/ajax/libs/Swiper/8.4.5/swiper-bundle.min.js">
+        </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Initialize all Swiper sliders
+                <?php
+                // Reset the result pointer to go through all rows again
+                $result->data_seek(0);
+                while ($row = $result->fetch_assoc()) :
+                ?>
+                    new Swiper('.campgroundSwiper-<?= $row['id'] ?>', {
+                        loop: true,
+                        pagination: {
+                            el: '.swiper-pagination',
+                            clickable: true,
+                        },
+                        navigation: {
+                            nextEl: '.swiper-button-next',
+                            prevEl: '.swiper-button-prev',
+                        },
+                        autoplay: {
+                            delay: 5000,
+                            disableOnInteraction: false,
+                        },
+                    });
+                <?php endwhile; ?>
+            });
+        </script>
 </body>
 
 </html>

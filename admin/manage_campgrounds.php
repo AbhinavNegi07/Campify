@@ -41,6 +41,7 @@ $approved_result = $conn->query($approved_sql);
                     <th>Location</th>
                     <th>Email</th>
                     <th>Phone</th>
+                    <th>Price</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -51,6 +52,7 @@ $approved_result = $conn->query($approved_sql);
                         <td><?= htmlspecialchars($row['location']) ?></td>
                         <td><?= htmlspecialchars($row['email']) ?></td>
                         <td><?= htmlspecialchars($row['phone']) ?></td>
+                        <td><?= htmlspecialchars($row['price']) ?></td>
                         <td>
                             <a href="campground_actions.php?action=approve&id=<?= $row['id'] ?>" class="btn btn-success btn-sm" onclick="showConfirmation(event, this.href, 'approve')">
                                 <i class="bi bi-check-circle"></i> Approve
@@ -73,6 +75,8 @@ $approved_result = $conn->query($approved_sql);
                     <th>Location</th>
                     <th>Email</th>
                     <th>Phone</th>
+                    <th>Price</th>
+
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -83,6 +87,7 @@ $approved_result = $conn->query($approved_sql);
                         <td><?= htmlspecialchars($row['location']) ?></td>
                         <td><?= htmlspecialchars($row['email']) ?></td>
                         <td><?= htmlspecialchars($row['phone']) ?></td>
+                        <td><?= htmlspecialchars($row['price']) ?></td>
                         <td>
                             <a href="campground_actions.php?action=delete&id=<?= $row['id'] ?>" class="btn btn-dark btn-sm" onclick="showConfirmation(event, this.href, 'delete')">
                                 <i class="bi bi-trash"></i> Delete

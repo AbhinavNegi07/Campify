@@ -21,6 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = filter_var($_POST['email'], FILTER_VALIDATE_EMAIL);
     $phone = preg_replace("/[^0-9+]/", "", $_POST['phone']);
     $description = htmlspecialchars($_POST['description']);
+    $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
+
 
     if (!$email) {
         $errors[] = "Invalid email format.";
@@ -45,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ✅ Register campground and generate slug
-    $campground_id = $campground->register($name, $location, $email, $phone, $description, "", $user_id);
+    $campground_id = $campground->register($name, $location, $email, $phone, $description, "", $user_id, $price);
 
     if ($campground_id === false) {
         $_SESSION['messages'] = ["⚠️ Registration failed. Please try again."];

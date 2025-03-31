@@ -26,15 +26,32 @@ class Campground
     //     }
     // }
 
-    public function register($name, $location, $email, $phone, $description, $image, $user_id)
+    // public function register($name, $location, $email, $phone, $description, $image, $user_id)
+    // {
+    //     error_log("Register function called");
+
+    //     $slug = $this->generateSlug($name);
+    //     $sql = "INSERT INTO campgrounds (name, location, email, phone, description, image, user_id, slug, status) 
+    //         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')"; // Default status is 'pending'
+    //     $stmt = $this->conn->prepare($sql);
+    //     $stmt->bind_param("ssssssis", $name, $location, $email, $phone, $description, $image, $user_id, $slug);
+
+    //     if ($stmt->execute()) {
+    //         return $this->conn->insert_id;
+    //     } else {
+    //         return false;
+    //     }
+    // }
+
+    public function register($name, $location, $email, $phone, $description, $image, $user_id, $price)
     {
         error_log("Register function called");
 
         $slug = $this->generateSlug($name);
-        $sql = "INSERT INTO campgrounds (name, location, email, phone, description, image, user_id, slug, status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')"; // Default status is 'pending'
+        $sql = "INSERT INTO campgrounds (name, location, email, phone, description, image, user_id, slug, price, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')"; // Default status is 'pending'
         $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("ssssssis", $name, $location, $email, $phone, $description, $image, $user_id, $slug);
+        $stmt->bind_param("ssssssisd", $name, $location, $email, $phone, $description, $image, $user_id, $slug, $price);
 
         if ($stmt->execute()) {
             return $this->conn->insert_id;
@@ -42,6 +59,7 @@ class Campground
             return false;
         }
     }
+
 
 
     // Function to generate a unique slug
@@ -143,53 +161,85 @@ class Campground
     }
 
     // Function to update a campground (Only owner can update)
-    public function updateCampground($id, $name, $location, $email, $phone, $description, $uploaded_images, $user_id)
+    // public function updateCampground($id, $name, $location, $email, $phone, $description, $uploaded_images, $user_id)
+    // {
+    //     // Fetch current campground details
+    //     $sql = "SELECT name, slug FROM campgrounds WHERE id = ?";
+    //     $stmt = $this->conn->prepare($sql);
+    //     $stmt->bind_param("i", $id);
+    //     $stmt->execute();
+    //     $stmt->store_result();
+    //     $stmt->bind_result($old_name, $old_slug);
+    //     $stmt->fetch();
+    //     $stmt->close();
+
+    //     // Check if name has changed; if so, generate a new slug
+    //     $new_slug = ($old_name !== $name) ? $this->generateSlug($name) : $old_slug;
+
+    //     // Update the main campground details
+    //     $sql = "UPDATE campgrounds SET name = ?, slug = ?, location = ?, email = ?, phone = ?, description = ? WHERE id = ? AND user_id = ?";
+    //     $stmt = $this->conn->prepare($sql);
+    //     $stmt->bind_param("ssssssii", $name, $new_slug, $location, $email, $phone, $description, $id, $user_id);
+    //     $updated = $stmt->execute();
+    //     $stmt->close();
+
+    //     if (!$updated) {
+    //         return false; // Stop if update failed
+    //     }
+
+    //     // Image handling: Check if new images are uploaded
+    //     if (!empty($uploaded_images)) {
+    //         // Delete old images from `campground_images` table
+    //         $delete_sql = "DELETE FROM campground_images WHERE campground_id = ?";
+    //         $delete_stmt = $this->conn->prepare($delete_sql);
+    //         $delete_stmt->bind_param("i", $id);
+    //         $delete_stmt->execute();
+    //         $delete_stmt->close();
+
+    //         // Insert new images
+    //         foreach ($uploaded_images as $image) {
+    //             $insert_sql = "INSERT INTO campground_images (campground_id, image_path) VALUES (?, ?)";
+    //             $insert_stmt = $this->conn->prepare($insert_sql);
+    //             $insert_stmt->bind_param("is", $id, $image);
+    //             $insert_stmt->execute();
+    //             $insert_stmt->close();
+    //         }
+    //     }
+
+    //     return true; // Update successful
+    // }
+
+    public function updateCampground($id, $name, $location, $email, $phone, $description, $price, $uploaded_images, $user_id, $slug)
     {
-        // Fetch current campground details
-        $sql = "SELECT name, slug FROM campgrounds WHERE id = ?";
+        $sql = "UPDATE campgrounds 
+            SET name = ?, location = ?, email = ?, phone = ?, description = ?, price = ?, slug = ? 
+            WHERE id = ? AND user_id = ?";
+
         $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $stmt->store_result();
-        $stmt->bind_result($old_name, $old_slug);
-        $stmt->fetch();
-        $stmt->close();
+        $stmt->bind_param("sssssdssi", $name, $location, $email, $phone, $description, $price, $slug, $id, $user_id);
 
-        // Check if name has changed; if so, generate a new slug
-        $new_slug = ($old_name !== $name) ? $this->generateSlug($name) : $old_slug;
-
-        // Update the main campground details
-        $sql = "UPDATE campgrounds SET name = ?, slug = ?, location = ?, email = ?, phone = ?, description = ? WHERE id = ? AND user_id = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("ssssssii", $name, $new_slug, $location, $email, $phone, $description, $id, $user_id);
-        $updated = $stmt->execute();
-        $stmt->close();
-
-        if (!$updated) {
-            return false; // Stop if update failed
+        if ($stmt->execute()) {
+            // ✅ Update images in the database
+            $this->updateCampgroundImages($id, $uploaded_images);
+            return true;
         }
-
-        // Image handling: Check if new images are uploaded
-        if (!empty($uploaded_images)) {
-            // Delete old images from `campground_images` table
-            $delete_sql = "DELETE FROM campground_images WHERE campground_id = ?";
-            $delete_stmt = $this->conn->prepare($delete_sql);
-            $delete_stmt->bind_param("i", $id);
-            $delete_stmt->execute();
-            $delete_stmt->close();
-
-            // Insert new images
-            foreach ($uploaded_images as $image) {
-                $insert_sql = "INSERT INTO campground_images (campground_id, image_path) VALUES (?, ?)";
-                $insert_stmt = $this->conn->prepare($insert_sql);
-                $insert_stmt->bind_param("is", $id, $image);
-                $insert_stmt->execute();
-                $insert_stmt->close();
-            }
-        }
-
-        return true; // Update successful
+        return false;
     }
+
+    public function updateCampgroundImages($campground_id, $image_paths)
+    {
+        // ✅ Clear old images from the database
+        $this->conn->query("DELETE FROM campground_images WHERE campground_id = " . intval($campground_id));
+
+        // ✅ Insert new images
+        $stmt = $this->conn->prepare("INSERT INTO campground_images (campground_id, image_path) VALUES (?, ?)");
+        foreach ($image_paths as $path) {
+            $stmt->bind_param("is", $campground_id, $path);
+            $stmt->execute();
+        }
+    }
+
+
 
     // Function to check if a campground already exists
     public function campgroundExists($name, $email, $phone)
@@ -226,7 +276,7 @@ class Campground
 
     public function getCampgroundImages($campground_id)
     {
-        $stmt = $this->conn->prepare("SELECT image_path FROM campground_images WHERE campground_id = ?");
+        $stmt = $this->conn->prepare("SELECT id,image_path FROM campground_images WHERE campground_id = ?");
         $stmt->bind_param("i", $campground_id);
         $stmt->execute();
         $result = $stmt->get_result();

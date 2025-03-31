@@ -341,7 +341,11 @@ $review_count = count($reviews);
     <?php include("../components/header.php"); ?>
 
     <!-- Hero Section with Main Image -->
-    <div class="camp-hero" style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('<?= !empty($images) ? $images[0]['image_path'] : '../assets/default.jpg' ?>');">
+    <!-- <div class="camp-hero" style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('<?= !empty($images) ? $images[0]['image_path'] : '../assets/default.jpg' ?>');"> -->
+    <div class="camp-hero"
+        style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), 
+    url('<?= !empty($images) ? '../uploads/' . htmlspecialchars($camp['slug']) . '/' . basename($images[0]['image_path']) : '../assets/default.jpg' ?>');">
+
         <div class="hero-overlay">
             <div class="hero-content">
                 <h1 class="display-4 fw-bold"><?= htmlspecialchars($camp['name']) ?></h1>
@@ -433,6 +437,8 @@ $review_count = count($reviews);
 
         <!-- Description Section -->
         <h2 class="section-title">About This Campground</h2>
+        <p><strong>Price per Night:</strong> ₹<?= number_format($camp['price'], 2) ?></p>
+
         <div class="description-card">
             <p><?= nl2br(htmlspecialchars($camp['description'])) ?></p>
         </div>
